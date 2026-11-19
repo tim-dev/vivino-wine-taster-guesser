@@ -3,6 +3,17 @@ import { fetchFlavorDictionary, fetchWine, fetchWineTastes } from './api.js';
 import { flattenDictionary, matchTopNote, resolveGuess, topFlavorNotes } from './game.js';
 import GuessInput from './GuessInput.jsx';
 
+// The wine response's image shape isn't pinned down, so try the usual
+// Vivino layouts: image.variations.bottle_* first, then image.location.
+// Vivino image URLs are often protocol-relative ("//images.vivino.com/...").
+function bottleImageUrl(wine) {
+  const image = wine?.image;
+  const v = image?.variations;
+  const url = v?.bottle_medium || v?.bottle_large || v?.bottle_small || image?.location;
+  if (typeof url !== 'string' || !url) return null;
+  return url.startsWith('//') ? `https:${url}` : url;
+}
+
 const params = new URLSearchParams(window.location.search);
 const WINE_ID = params.get('wine_id');
 const LANG = params.get('lang') || 'en';
@@ -12,6 +23,7 @@ export default function App() {
   const [revealed, setRevealed] = useState(() => new Set());
   const [misses, setMisses] = useState([]);
   const [gaveUp, setGaveUp] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
     if (!WINE_ID) {
@@ -39,6 +51,7 @@ export default function App() {
 
   const wineName = state.wine?.name;
   const wineryName = state.wine?.winery?.name;
+  const bottleUrl = bottleImageUrl(state.wine);
 
   const won = topNotes.length > 0 && revealed.size === topNotes.length;
   const finished = won || gaveUp;
@@ -64,8 +77,15 @@ export default function App() {
     <main className="app">
       <header>
         <p className="eyebrow">Guess the flavor notes</p>
-        <h1>{wineName || `Wine ${WINE_ID}`}</h1>
-        {wineName && wineryName && <p className="winery">{wineryName}</p>}
+        <div className="wine">
+          {bottleUrl && !imageFailed && (
+            <img className="bottle" src={bottleUrl} alt="" onError={() => setImageFailed(true)} />
+          )}
+          <div>
+            <h1>{wineName || `Wine ${WINE_ID}`}</h1>
+            {wineName && wineryName && <p className="winery">{wineryName}</p>}
+          </div>
+        </div>
         <p className="muted">Name the {topNotes.length} flavors reviewers mention most.</p>
       </header>
 

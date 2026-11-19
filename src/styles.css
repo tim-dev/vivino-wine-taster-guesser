@@ -39,14 +39,17 @@ h1 { margin: 0 0 4px; font-size: 1.6rem; }
 .error { color: var(--miss); }
 header { margin-bottom: 24px; }
 .eyebrow {
-  margin: 0 0 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--accent);
 }
 .winery { margin: 0 0 8px; font-weight: 500; }
+.wine { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.wine > div { min-width: 0; }
+.bottle { flex: none; height: 96px; width: auto; max-width: 48px; object-fit: contain; }
 
 .board {
   list-style: none;
