@@ -1,24 +1,56 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchFlavorDictionary, fetchWine, fetchWineTastes } from './api.js';
 import { flattenDictionary, matchTopNote, resolveGuess, topFlavorNotes } from './game.js';
+import { bottleImageUrl } from './wine.js';
 import GuessInput from './GuessInput.jsx';
+import WineSearch from './WineSearch.jsx';
 
-// The wine response's image shape isn't pinned down, so try the usual
-// Vivino layouts: image.variations.bottle_* first, then image.location.
-// Vivino image URLs are often protocol-relative ("//images.vivino.com/...").
-function bottleImageUrl(wine) {
-  const image = wine?.image;
-  const v = image?.variations;
-  const url = v?.bottle_medium || v?.bottle_large || v?.bottle_small || image?.location;
-  if (typeof url !== 'string' || !url) return null;
-  return url.startsWith('//') ? `https:${url}` : url;
+const LANG = new URLSearchParams(window.location.search).get('lang') || 'en';
+
+const wineIdFromUrl = () => new URLSearchParams(window.location.search).get('wine_id');
+
+// Picks the wine: ?wine_id=<id> if given, otherwise a search. The wine ID is
+// kept in the URL so a game can be shared and the back button works.
+export default function App() {
+  const [wineId, setWineId] = useState(wineIdFromUrl);
+  // The search result the player picked, so the header can show right away.
+  const [pickedWine, setPickedWine] = useState(null);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setWineId(wineIdFromUrl());
+      setPickedWine(null);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  function changeWine(wine) {
+    const url = new URL(window.location.href);
+    if (wine) url.searchParams.set('wine_id', wine.id);
+    else url.searchParams.delete('wine_id');
+    window.history.pushState(null, '', url);
+    setWineId(wine ? String(wine.id) : null);
+    setPickedWine(wine);
+  }
+
+  if (!wineId) {
+    return (
+      <main className="app">
+        <header>
+          <p className="eyebrow">Guess the flavor notes</p>
+          <p className="muted">Pick a wine to play with.</p>
+        </header>
+        <WineSearch lang={LANG} onSelect={changeWine} />
+      </main>
+    );
+  }
+
+  // Keyed by wine ID so all game state resets when the wine changes.
+  return <Game key={wineId} wineId={wineId} initialWine={pickedWine} onClear={() => changeWine(null)} />;
 }
 
-const params = new URLSearchParams(window.location.search);
-const WINE_ID = params.get('wine_id');
-const LANG = params.get('lang') || 'en';
-
-export default function App() {
+function Game({ wineId, initialWine, onClear }) {
   const [state, setState] = useState({ status: 'loading' });
   const [revealed, setRevealed] = useState(() => new Set());
   const [misses, setMisses] = useState([]);
@@ -26,25 +58,21 @@ export default function App() {
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
-    if (!WINE_ID) {
-      setState({ status: 'error', message: 'Add ?wine_id=<id> to the URL to start.' });
-      return;
-    }
     let cancelled = false;
-    // The wine itself is only used for its name, so a failure there shouldn't
-    // block the game: fall back to showing the ID.
-    const wine = fetchWine(WINE_ID, LANG).catch(() => null);
-    Promise.all([fetchWineTastes(WINE_ID, LANG), fetchFlavorDictionary(LANG), wine])
+    // The wine itself is only used for its name and bottle, so a failure there
+    // shouldn't block the game: fall back to the picked search result, or the ID.
+    const wine = fetchWine(wineId, LANG).catch(() => initialWine);
+    Promise.all([fetchWineTastes(wineId, LANG), fetchFlavorDictionary(LANG), wine])
       .then(([tastes, dict, wine]) => {
         if (!cancelled) setState({ status: 'ready', tastes, dict, wine });
       })
       .catch((err) => {
-        if (!cancelled) setState({ status: 'error', message: `Couldn't load wine ${WINE_ID}: ${err.message}` });
+        if (!cancelled) setState({ status: 'error', message: `Couldn't load wine ${wineId}: ${err.message}` });
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [wineId, initialWine]);
 
   const topNotes = useMemo(() => (state.status === 'ready' ? topFlavorNotes(state.tastes) : []), [state]);
   const words = useMemo(() => (state.status === 'ready' ? flattenDictionary(state.dict) : []), [state]);
@@ -70,7 +98,12 @@ export default function App() {
     return <main className="app"><p className="muted">Loading…</p></main>;
   }
   if (state.status === 'error') {
-    return <main className="app"><p className="error">{state.message}</p></main>;
+    return (
+      <main className="app">
+        <p className="error">{state.message}</p>
+        <button className="link" onClick={onClear}>Search for a wine</button>
+      </main>
+    );
   }
 
   return (
@@ -82,8 +115,9 @@ export default function App() {
             <img className="bottle" src={bottleUrl} alt="" onError={() => setImageFailed(true)} />
           )}
           <div>
-            <h1>{wineName || `Wine ${WINE_ID}`}</h1>
+            <h1>{wineName || `Wine ${wineId}`}</h1>
             {wineName && wineryName && <p className="winery">{wineryName}</p>}
+            <button className="link" onClick={onClear}>Choose a different wine</button>
           </div>
         </div>
         <p className="muted">Name the {topNotes.length} flavors reviewers mention most.</p>

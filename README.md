@@ -12,7 +12,8 @@ npm run dev
 
 Query params:
 
-- `wine_id` (required): the wine to play with.
+- `wine_id` (optional): the wine to play with. Without it, the page shows a wine search; picking a
+  result sets `wine_id` in the URL, and "Choose a different wine" clears it.
 - `lang` (optional, default `en`): language for the autocomplete words and note names.
 
 `npm run dev` starts an Express server (`server/index.js`) that runs Vite as middleware for the
@@ -46,6 +47,8 @@ function `api/index.js`, which runs the same Express app as the local server.
 - `GET /wines/:id/tastes`: flavor groups with `primary_keywords` / `secondary_keywords`
   (`{id, name, count}`). The top 5 by count across all groups are the answers.
 - `GET /wines/:id`: the wine's `name` and `winery.name`, shown in the header (falls back to the ID).
+- `GET /wines/_find?q=<text>`: wine search, used when no `wine_id` is given. Each result shows its
+  bottle image, name, and winery name.
 - `GET /tastes/languages/:lang/detection_rules`: the full flavor dictionary
   (`{flavors: [{group, words: [{id, name, aliases}]}]}`), used for autocomplete.
 

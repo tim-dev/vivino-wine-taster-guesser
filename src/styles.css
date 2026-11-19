@@ -149,3 +149,33 @@ button.link { background: none; color: var(--muted); padding: 0; text-decoration
 
 footer { margin-top: 24px; }
 .win { font-weight: 700; color: var(--accent); margin: 0 0 8px; }
+
+.wine-search input[type='text'] { margin-bottom: 12px; }
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  transition: opacity 0.15s;
+}
+.results.stale { opacity: 0.6; }
+.result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: normal;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.result:hover, .result:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
+.result:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.result-bottle { flex: none; width: 28px; height: 56px; object-fit: contain; }
+.result-text { display: flex; flex-direction: column; min-width: 0; }
+.result-name { font-weight: 600; overflow-wrap: anywhere; }
+.result-winery { font-size: 0.85rem; color: var(--muted); }
