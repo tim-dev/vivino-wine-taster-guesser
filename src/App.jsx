@@ -80,6 +80,7 @@ function Game({ wineId, initialWine, onClear }) {
 
   const topNotes = useMemo(() => (state.status === 'ready' ? topFlavorNotes(state.tastes) : []), [state]);
   const words = useMemo(() => (state.status === 'ready' ? flattenDictionary(state.dict) : []), [state]);
+  const totalMentions = topNotes.reduce((sum, note) => sum + note.count, 0);
 
   const lastMissText = useCallback((miss) => {
     let text = `“${miss}” isn't in the top ${topNotes.length}`
@@ -136,7 +137,7 @@ function Game({ wineId, initialWine, onClear }) {
             <button className="link" onClick={onClear}>Choose a different wine</button>
           </div>
         </div>
-        <p className="muted">Name the {topNotes.length} flavors reviewers mention most.</p>
+        <p className="muted">Name the {topNotes.length} flavors reviewers mention most ({totalMentions} mentions in total).</p>
       </header>
 
       {topNotes.length === 0 ? (
