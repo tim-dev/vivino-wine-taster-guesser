@@ -13,6 +13,22 @@
 //
 // Flavor IDs are shared between the tastes and dictionary responses, so guesses are checked by ID.
 
+// flavorNotesMap makes a tastes struct with multiple groups and keywords into one flat map
+function flavorNotesMap(tastes) {
+  const byId = new Map();
+  for (const group of tastes?.flavor ?? []) {
+    const keywords = [...(group.primary_keywords ?? []), ...(group.secondary_keywords ?? [])];
+    for (const kw of keywords) {
+      const existing = byId.get(kw.id);
+      if (!existing || kw.count > existing.count) {
+        byId.set(kw.id, { id: kw.id, name: kw.name, count: kw.count, group: group.group });
+      }
+    }
+  }
+  return byId
+}
+
+
 async function getJSON(path, lang, signal) {
   const sep = path.includes('?') ? '&' : '?';
   const res = await fetch(`/api${path}${sep}language=${encodeURIComponent(lang)}`, {
@@ -29,7 +45,8 @@ async function getJSON(path, lang, signal) {
 }
 
 export function fetchWineTastes(wineId, lang) {
-  return getJSON(`/wines/${encodeURIComponent(wineId)}/tastes`, lang);
+  return getJSON(`/wines/${encodeURIComponent(wineId)}/tastes`, lang)
+    .then((tastes) => flavorNotesMap(tastes));
 }
 
 export function fetchFlavorDictionary(lang) {

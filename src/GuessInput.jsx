@@ -74,7 +74,7 @@ export default function GuessInput({ words, onGuess, disabled }) {
           <ul className="suggestions" id={listId} role="listbox">
             {suggestions.map((w, i) => (
               <li
-                key={w.id}
+                key={w.name}
                 id={`${listId}-${i}`}
                 role="option"
                 aria-selected={i === active}

@@ -7,18 +7,8 @@ const normalize = (s) => (s || '').trim().toLocaleLowerCase();
 
 // Top N flavor notes by count, across all flavor groups. A keyword can show up
 // both as primary and secondary, so dedupe by ID and keep the highest count.
-export function topFlavorNotes(tastes, n = TOP_N) {
-  const byId = new Map();
-  for (const group of tastes?.flavor ?? []) {
-    const keywords = [...(group.primary_keywords ?? []), ...(group.secondary_keywords ?? [])];
-    for (const kw of keywords) {
-      const existing = byId.get(kw.id);
-      if (!existing || kw.count > existing.count) {
-        byId.set(kw.id, { id: kw.id, name: kw.name, count: kw.count, group: group.group });
-      }
-    }
-  }
-  return [...byId.values()].sort((a, b) => b.count - a.count).slice(0, n);
+export function topFlavorNotes(tasteMap, n = TOP_N) {
+  return [...tasteMap.values()].sort((a, b) => b.count - a.count).slice(0, n);
 }
 
 // Flatten the dictionary into one list of words, each with lower-cased search
@@ -32,7 +22,7 @@ export function flattenDictionary(dict) {
         id: w.id,
         name: w.name,
         group: group.group,
-        terms: [w.name, ...aliases].map(normalize),
+        terms: Array.from(new Set([w.name, ...aliases].map(normalize))),
       });
     }
   }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchFlavorDictionary, fetchWine, fetchWineTastes } from './api.js';
 import { flattenDictionary, matchTopNote, resolveGuess, topFlavorNotes } from './game.js';
 import { bottleImageUrl } from './wine.js';
@@ -62,7 +62,11 @@ function Game({ wineId, initialWine, onClear }) {
     // The wine itself is only used for its name and bottle, so a failure there
     // shouldn't block the game: fall back to the picked search result, or the ID.
     const wine = fetchWine(wineId, LANG).catch(() => initialWine);
-    Promise.all([fetchWineTastes(wineId, LANG), fetchFlavorDictionary(LANG), wine])
+    Promise.all([
+      fetchWineTastes(wineId, LANG),
+      fetchFlavorDictionary(LANG),
+      wine,
+    ])
       .then(([tastes, dict, wine]) => {
         if (!cancelled) setState({ status: 'ready', tastes, dict, wine });
       })
@@ -76,6 +80,18 @@ function Game({ wineId, initialWine, onClear }) {
 
   const topNotes = useMemo(() => (state.status === 'ready' ? topFlavorNotes(state.tastes) : []), [state]);
   const words = useMemo(() => (state.status === 'ready' ? flattenDictionary(state.dict) : []), [state]);
+
+  const lastMissText = useCallback((miss) => {
+    let text = `“${miss}” isn't in the top ${topNotes.length}`
+
+    if (state.tastes) {
+      let taste = state.tastes.values().find((t) => t.name === miss)
+      if (taste && taste.count > 0) {
+        text += `, but ${taste.count} people mentioned it`
+      }
+    }
+    return text
+  }, [state.tastes])
 
   const wineName = state.wine?.name;
   const wineryName = state.wine?.winery?.name;
@@ -151,7 +167,7 @@ function Game({ wineId, initialWine, onClear }) {
                 ))}
               </div>
               <p className="muted">
-                “{misses[misses.length - 1]}” isn't in the top {topNotes.length}.
+                {lastMissText(misses[misses.length - 1])}
               </p>
             </div>
           )}
