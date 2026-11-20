@@ -41,5 +41,5 @@ export function fetchWine(wineId, lang) {
 }
 
 export function searchWines(query, lang, signal) {
-  return getJSON(`/wines/_find?q=${encodeURIComponent(query)}`, lang, signal);
+  return getJSON(`/wines/_find?q=${encodeURIComponent(query)}&include_full=true`, lang, signal);
 }
